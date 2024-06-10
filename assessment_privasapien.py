@@ -1,7 +1,6 @@
 import boto3
 import os
 from pyspark.sql import SparkSession
-import random
 
 # Initialize the S3 client
 s3 = boto3.client('s3')
@@ -33,16 +32,27 @@ print(f"Classified files: {file_types}")
 # Initialize Spark session
 spark = SparkSession.builder.appName("S3DataSampling").getOrCreate()
 
+# Function to sample data
+def sample_data(file, file_type, sample_size=100):
+    path = f"s3a://{bucket_name}/{file}"
+    if file_type == 'csv':
+        df = spark.read.csv(path, header=True)
+    elif file_type == 'json':
+        df = spark.read.json(path)
+    elif file_type == 'parquet':
+        df = spark.read.parquet(path)
+    return df.sample(False, sample_size / df.count())
+
 # Sample data
 samples = {'csv': [], 'json': [], 'parquet': []}
-sample_fraction = 0.1  # 10% sample
+sample_size = 100
 
 for file in file_types['csv']:
-    samples['csv'].append(intelligent_sample_data(file, 'csv', sample_fraction))
+    samples['csv'].append(sample_data(file, 'csv', sample_size))
 for file in file_types['json']:
-    samples['json'].append(intelligent_sample_data(file, 'json', sample_fraction))
+    samples['json'].append(sample_data(file, 'json', sample_size))
 for file in file_types['parquet']:
-    samples['parquet'].append(intelligent_sample_data(file, 'parquet', sample_fraction))
+    samples['parquet'].append(sample_data(file, 'parquet', sample_size))
 
 # Function to save samples back to S3
 def save_sample(df, path, file_type):
