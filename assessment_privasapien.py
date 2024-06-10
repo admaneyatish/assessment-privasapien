@@ -33,18 +33,6 @@ print(f"Classified files: {file_types}")
 # Initialize Spark session
 spark = SparkSession.builder.appName("S3DataSampling").getOrCreate()
 
-# Function to intelligently sample data
-def intelligent_sample_data(file, file_type, fraction=0.1, seed=42):
-    path = f"s3a://{bucket_name}/{file}"
-    if file_type == 'csv':
-        df = spark.read.csv(path, header=True, inferSchema=True)
-    elif file_type == 'json':
-        df = spark.read.json(path, inferSchema=True)
-    elif file_type == 'parquet':
-        df = spark.read.parquet(path)
-    sample_df = df.sample(fraction=fraction, seed=seed)
-    return sample_df
-
 # Sample data
 samples = {'csv': [], 'json': [], 'parquet': []}
 sample_fraction = 0.1  # 10% sample
